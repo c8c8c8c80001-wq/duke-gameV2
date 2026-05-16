@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 
 export default function App() {
-  // 修正點 1：使用 useRef 封裝音效，避免每次 Render 重複創建與 SSR 報錯
   const clickSoundRef = useRef(null)
   const countdownSoundRef = useRef(null)
   const hitSoundRef = useRef(null)
@@ -9,7 +8,6 @@ export default function App() {
   const loseSoundRef = useRef(null)
   const bgmSoundRef = useRef(null)
 
-  // 修正點 2：在客戶端組件掛載時才初始化 Audio 物件
   useEffect(() => {
     clickSoundRef.current = new Audio("/sounds/click.mp3")
     countdownSoundRef.current = new Audio("/sounds/countdown.mp3")
@@ -22,14 +20,11 @@ export default function App() {
     bgmSoundRef.current = bgm
   }, [])
 
-  // 輔助函式：安全播放音效，防止未載入完成或被瀏覽器阻擋時報錯
   const playSound = (soundRef, resetTime = false) => {
     const sound = soundRef.current
     if (sound) {
       if (resetTime) sound.currentTime = 0
-      sound.play().catch(() => {
-        // 捕捉瀏覽器因使用者尚未互動而阻擋播放的錯誤，避免程式崩潰
-      })
+      sound.play().catch(() => {})
     }
   }
 
@@ -102,7 +97,7 @@ export default function App() {
       <span
         key={i}
         style={{
-          fontSize: "34px",
+          fontSize: "20px",
           animation: count === 1 ? "heartPulse 0.7s infinite" : "none"
         }}
       >
@@ -112,18 +107,18 @@ export default function App() {
   }
 
   const cardStyle = (selected) => ({
-    width: "120px",
-    height: "160px",
-    borderRadius: "28px",
+    width: "90px",
+    height: "125px",
+    borderRadius: "16px",
     background: "linear-gradient(to bottom, #444, #111)",
-    border: "4px solid white",
+    border: "3px solid white",
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
     cursor: "pointer",
-    transform: selected ? "scale(1.15) translateY(-10px)" : "scale(1)",
-    boxShadow: selected ? "0 0 40px #ffd000" : "none",
+    transform: selected ? "scale(1.1) translateY(-8px)" : "scale(1)",
+    boxShadow: selected ? "0 0 25px #ffd000" : "none",
     transition: "0.2s"
   })
 
@@ -194,7 +189,6 @@ export default function App() {
     }
 
     const timer = setTimeout(() => {
-      // 修正點 3：替換為安全播放函式
       playSound(countdownSoundRef, true)
       setDecisionCountdown(prev => prev - 1)
     }, 1000)
@@ -219,7 +213,6 @@ export default function App() {
 
         const result = judgeBattle(finalPlayerPunch, enemyFinal)
 
-        // 修正點 4：替換為安全播放函式
         playSound(hitSoundRef, true)
         triggerHitEffect(result)
 
@@ -236,12 +229,10 @@ export default function App() {
 
           if (newLeft <= 0 || newRight <= 0) {
             if (newLeft <= 0) {
-              // 修正點 5：替換為安全播放函式
               playSound(loseSoundRef, true)
               setPlayerState("lose")
               setEnemyState("win")
             } else {
-              // 修正點 6：替換為安全播放函式
               playSound(winSoundRef, true)
               setPlayerState("win")
               setEnemyState("lose")
@@ -298,7 +289,6 @@ export default function App() {
     }
 
     const timer = setTimeout(() => {
-      // 修正點 7：替換為安全播放函式
       playSound(countdownSoundRef, true)
       setCountdown(prev => prev - 1)
     }, 1000)
@@ -307,7 +297,6 @@ export default function App() {
   }, [countdown, phase, finalPlayerPunch])
 
   const chooseFinalPunch = (card) => {
-    // 修正點 8：替換為安全播放函式
     playSound(clickSoundRef, true)
     setFinalPlayerPunch(card)
     setPlayerState("punch")
@@ -354,22 +343,25 @@ export default function App() {
         minHeight: "100vh",
         background: "linear-gradient(to bottom, #111827, #000)",
         color: "white",
-        overflow: "hidden",
+        overflowX: "hidden",
         fontFamily: "sans-serif",
-        paddingBottom: "50px",
-        position: "relative"
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        position: "relative",
+        boxSizing: "border-box"
       }}
     >
       <style>
         {`
           @keyframes float {
             0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
+            50% { transform: translateY(-6px); }
             100% { transform: translateY(0px); }
           }
           @keyframes heartPulse {
             0% { transform: scale(1); }
-            50% { transform: scale(1.25); }
+            50% { transform: scale(1.2); }
             100% { transform: scale(1); }
           }
         `}
@@ -387,331 +379,375 @@ export default function App() {
         }}
       />
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          padding: "30px 40px"
-        }}
-      >
-        <div>
-          <div style={{ fontSize: "24px", fontWeight: "900" }}>玩家</div>
-          <div style={{ marginTop: "10px" }}>{renderHearts(leftHearts)}</div>
-        </div>
-
-        <div
-          style={{
-            fontSize:
-              phase === "pick" ||
-              phase === "finalPick" ||
-              phase === "countdownReveal" ||
-              phase === "countdownBattle"
-                ? "140px"
-                : "60px",
-            fontWeight: "900",
-            color: "#ffd000",
-            transform:
-              decisionCountdown <= 3 || countdown <= 3
-                ? "scale(1.15)"
-                : "scale(1)",
-            transition: "0.2s"
-          }}
-        >
-          {phase === "pick" || phase === "finalPick"
-            ? decisionCountdown
-            : phase === "countdownReveal" || phase === "countdownBattle"
-            ? countdown
-            : "⚡"}
-        </div>
-
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: "24px", fontWeight: "900" }}>電腦</div>
-          <div style={{ marginTop: "10px" }}>{renderHearts(rightHearts)}</div>
-        </div>
-      </div>
-
+      {/* 頂部血條UI */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          padding: "0 50px"
+          padding: "15px 20px",
+          background: "rgba(0,0,0,0.4)"
         }}
       >
-        <img
-          src={getCharacterImage(playerCharacter, playerState)}
-          style={{
-            width: "320px",
-            animation:
-              playerState === "idle"
-                ? "float 2s ease-in-out infinite"
-                : "none",
-            transform: battleFreeze
-              ? "scale(1.28)"
-              : hitShake && winnerSide === "lose"
-              ? "translateX(-45px)"
-              : winnerSide === "win"
-              ? "scale(1.22)"
-              : "scale(1)",
-            filter:
-              winnerSide === "win"
-                ? "drop-shadow(0 0 55px #ffd000)"
-                : "none",
-            transition: "0.28s"
-          }}
-          alt="player"
-        />
-
-        <img
-          src={getCharacterImage(enemyCharacter, enemyState)}
-          style={{
-            width: "320px",
-            animation:
-              enemyState === "idle" ? "float 2s ease-in-out infinite" : "none",
-            transform: battleFreeze
-              ? "scale(1.28)"
-              : hitShake && winnerSide === "win"
-              ? "translateX(45px)"
-              : winnerSide === "lose"
-              ? "scale(1.22)"
-              : "scale(1)",
-            filter:
-              winnerSide === "lose"
-                ? "drop-shadow(0 0 55px #ff3030)"
-                : "none",
-            transition: "0.28s"
-          }}
-          alt="enemy"
-        />
+        <div>
+          <div style={{ fontSize: "15px", fontWeight: "900" }}>玩家</div>
+          <div style={{ marginTop: "4px" }}>{renderHearts(leftHearts)}</div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: "15px", fontWeight: "900" }}>電腦</div>
+          <div style={{ marginTop: "4px" }}>{renderHearts(rightHearts)}</div>
+        </div>
       </div>
 
+      {/* 中部對戰區域：角色放左右，倒數放角色中間 */}
+      <div
+        style={{
+          flex: "1",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          position: "relative",
+          width: "100%",
+          minHeight: "260px",
+          padding: "0 10px",
+          boxSizing: "border-box"
+        }}
+      >
+        {/* 玩家角色（左側） */}
+        <div style={{ width: "38%", display: "flex", justifyContent: "center", zIndex: 2 }}>
+          <img
+            src={getCharacterImage(playerCharacter, playerState)}
+            style={{
+              width: "100%",
+              maxHeight: "200px",
+              objectFit: "contain",
+              animation: playerState === "idle" ? "float 2s ease-in-out infinite" : "none",
+              transform: battleFreeze
+                ? "scale(1.15)"
+                : hitShake && winnerSide === "lose"
+                ? "translateX(-20px)"
+                : winnerSide === "win"
+                ? "scale(1.1)"
+                : "scale(1)",
+              filter: winnerSide === "win" ? "drop-shadow(0 0 30px #ffd000)" : "none",
+              transition: "0.25s"
+            }}
+            alt="player"
+          />
+        </div>
+
+        {/* 中央資訊區（倒數與狀態文字放兩者正中間） */}
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "24%",
+            textAlign: "center",
+            zIndex: 5,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center"
+          }}
+        >
+          {/* 倒數數字 */}
+          <div
+            style={{
+              fontSize:
+                phase === "pick" ||
+                phase === "finalPick" ||
+                phase === "countdownReveal" ||
+                phase === "countdownBattle"
+                  ? "54px"
+                  : "30px",
+              fontWeight: "900",
+              color: "#ffd000",
+              textShadow: "0 0 15px rgba(0,0,0,1), 0 0 5px rgba(0,0,0,1)",
+              transform: decisionCountdown <= 3 || countdown <= 3 ? "scale(1.15)" : "scale(1)",
+              transition: "0.2s",
+              lineHeight: "1"
+            }}
+          >
+            {phase === "pick" || phase === "finalPick"
+              ? decisionCountdown
+              : phase === "countdownReveal" || phase === "countdownBattle"
+              ? countdown
+              : "⚡"}
+          </div>
+
+          {/* 輔助中央小提示文字（配合 resultText 顯示） */}
+          <div
+            style={{
+              fontSize: "12px",
+              color: "#aaa",
+              marginTop: "4px",
+              whiteSpace: "nowrap",
+              textShadow: "0 1px 3px #000"
+            }}
+          >
+            {phase === "countdownBattle" ? "BATTLE" : phase === "pick" ? "READY" : ""}
+          </div>
+        </div>
+
+        {/* 電腦角色（右側，做水平翻轉面向玩家） */}
+        <div style={{ width: "38%", display: "flex", justifyContent: "center", zIndex: 2 }}>
+          <img
+            src={getCharacterImage(enemyCharacter, enemyState)}
+            style={{
+              width: "100%",
+              maxHeight: "200px",
+              objectFit: "contain",
+              animation: enemyState === "idle" ? "float 2s ease-in-out infinite" : "none",
+              transform: battleFreeze
+                ? "scale(1.15) scaleX(-1)"
+                : hitShake && winnerSide === "win"
+                ? "translateX(20px) scaleX(-1)"
+                : winnerSide === "lose"
+                ? "scale(1.1) scaleX(-1)"
+                : "scaleX(-1)",
+              filter: winnerSide === "lose" ? "drop-shadow(0 0 30px #ff3030)" : "none",
+              transition: "0.25s"
+            }}
+            alt="enemy"
+          />
+        </div>
+      </div>
+
+      {/* 提示主文字區域（移至中下銜接操作區） */}
       <div
         style={{
           textAlign: "center",
-          marginTop: "20px",
-          fontSize: "38px",
-          fontWeight: "900"
+          fontSize: "22px",
+          fontWeight: "900",
+          padding: "0 15px",
+          color: "#fff",
+          textShadow: "0 2px 4px rgba(0,0,0,0.5)",
+          marginBottom: "10px"
         }}
       >
         {resultText}
       </div>
 
-      {phase === "start" && (
-        <div style={{ textAlign: "center", marginTop: "60px" }}>
-          <div style={{ fontSize: "82px", fontWeight: "900", color: "#ffd000" }}>
-            雙拳大戰
-          </div>
-          <button
-            onClick={() => {
-              // 修正點 9：替換為安全播放函式
-              playSound(clickSoundRef, true)
-              playSound(bgmSoundRef)
-              setPhase("selectPlayer")
-            }}
-            style={{
-              marginTop: "50px",
-              padding: "24px 80px",
-              borderRadius: "999px",
-              border: "none",
-              background: "#ff4d4d",
-              color: "white",
-              fontSize: "36px",
-              fontWeight: "900",
-              cursor: "pointer"
-            }}
-          >
-            開始遊戲
-          </button>
-        </div>
-      )}
-
-      {phase === "selectPlayer" && (
-        <div style={{ textAlign: "center", marginTop: "50px" }}>
-          <div style={{ fontSize: "42px", fontWeight: "900", marginBottom: "40px" }}>
-            選擇你的角色
-          </div>
-          <div style={{ display: "flex", justifyContent: "center", gap: "40px" }}>
-            {Object.keys(characters).map(key => (
-              <div
-                key={key}
-                onClick={() => {
-                  // 修正點 10
-                  playSound(clickSoundRef, true)
-                  setPlayerCharacter(key)
-                  setPhase("selectEnemy")
-                }}
-                style={{ cursor: "pointer" }}
-              >
-                <img src={characters[key].idle} style={{ width: "220px" }} alt={key} />
-                <div style={{ marginTop: "20px", fontSize: "28px", fontWeight: "900" }}>
-                  {characters[key].name}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {phase === "selectEnemy" && (
-        <div style={{ textAlign: "center", marginTop: "50px" }}>
-          <div style={{ fontSize: "42px", fontWeight: "900", marginBottom: "40px" }}>
-            選擇敵人角色
-          </div>
-          <div style={{ display: "flex", justifyContent: "center", gap: "40px" }}>
-            {Object.keys(characters).map(key => (
-              <div
-                key={key}
-                onClick={() => {
-                  // 修正點 11
-                  playSound(clickSoundRef, true)
-                  setEnemyCharacter(key)
-                  setDecisionCountdown(5)
-                  setResultText("請在5秒內選擇左右拳")
-                  setPhase("pick")
-                }}
-                style={{ cursor: "pointer" }}
-              >
-                <img src={characters[key].idle} style={{ width: "220px" }} alt={key} />
-                <div style={{ marginTop: "20px", fontSize: "28px", fontWeight: "900" }}>
-                  {characters[key].name}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {phase === "pick" && (
-        <div style={{ textAlign: "center", marginTop: "40px" }}>
-          <div style={{ fontSize: "34px", marginBottom: "30px" }}>選擇左拳</div>
-          <div style={{ display: "flex", justifyContent: "center", gap: "30px" }}>
-            {cards.map(card => (
-              <div
-                key={card}
-                onClick={() => {
-                  // 修正點 12
-                  playSound(clickSoundRef, true)
-                  setLeftPunch(card)
-                }}
-                style={cardStyle(leftPunch === card)}
-              >
-                <div style={{ fontSize: "60px" }}>{getCardEmoji(card)}</div>
-                <div style={{ marginTop: "10px", fontSize: "24px" }}>{card}</div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ fontSize: "34px", margin: "50px 0 30px" }}>選擇右拳</div>
-          <div style={{ display: "flex", justifyContent: "center", gap: "30px" }}>
-            {cards.map(card => (
-              <div
-                key={card}
-                onClick={() => {
-                  // 修正點 13
-                  playSound(clickSoundRef, true)
-                  setRightPunch(card)
-                }}
-                style={cardStyle(rightPunch === card)}
-              >
-                <div style={{ fontSize: "60px" }}>{getCardEmoji(card)}</div>
-                <div style={{ marginTop: "10px", fontSize: "24px" }}>{card}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {phase === "finalPick" && (
-        <div style={{ textAlign: "center", marginTop: "40px" }}>
-          <div style={{ fontSize: "44px", fontWeight: "900" }}>雙方拳種公開</div>
-          <div style={{ display: "flex", justifyContent: "space-around", marginTop: "60px" }}>
-            <div>
-              <div style={{ fontSize: "30px", marginBottom: "20px" }}>你的雙拳</div>
-              <div style={{ fontSize: "100px" }}>
-                {getCardEmoji(leftPunch)} {getCardEmoji(rightPunch)}
-              </div>
+      {/* 下部操作區域：選擇要出的拳放中下 */}
+      <div
+        style={{
+          background: "rgba(255,255,255,0.03)",
+          borderTop: "1px solid rgba(255,255,255,0.08)",
+          padding: "20px 10px 35px 10px",
+          minHeight: "220px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center"
+        }}
+      >
+        {phase === "start" && (
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "40px", fontWeight: "900", color: "#ffd000", marginBottom: "20px" }}>
+              雙拳大戰
             </div>
-            <div>
-              <div style={{ fontSize: "30px", marginBottom: "20px" }}>敵人的雙拳</div>
-              <div style={{ fontSize: "100px" }}>
-                {getCardEmoji(enemyLeftPunch)} {getCardEmoji(enemyRightPunch)}
-              </div>
-            </div>
-          </div>
-
-          <div style={{ fontSize: "38px", marginTop: "60px", marginBottom: "30px" }}>
-            選擇最終拳
-          </div>
-          <div style={{ display: "flex", justifyContent: "center", gap: "40px" }}>
-            {[leftPunch, rightPunch].map((card, index) => (
-              <div
-                key={index}
-                onClick={() => {
-                  chooseFinalPunch(card)
-                }}
-                style={cardStyle(false)}
-              >
-                <div style={{ fontSize: "60px" }}>{getCardEmoji(card)}</div>
-                <div style={{ marginTop: "10px", fontSize: "24px" }}>{card}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {phase === "result" && (
-        <div style={{ textAlign: "center", marginTop: "60px" }}>
-          <div style={{ fontSize: "50px", fontWeight: "900" }}>最終出拳</div>
-          <div style={{ fontSize: "120px", marginTop: "30px" }}>
-            {getCardEmoji(finalPlayerPunch)} VS {getCardEmoji(finalEnemyPunch)}
-          </div>
-          {!gameOver && (
             <button
-              onClick={nextRound}
+              onClick={() => {
+                playSound(clickSoundRef, true)
+                playSound(bgmSoundRef)
+                setPhase("selectPlayer")
+              }}
               style={{
-                marginTop: "50px",
-                padding: "20px 60px",
+                padding: "14px 50px",
                 borderRadius: "999px",
                 border: "none",
-                background: "#00c96b",
+                background: "#ff4d4d",
                 color: "white",
-                fontSize: "30px",
+                fontSize: "22px",
                 fontWeight: "900",
                 cursor: "pointer"
               }}
             >
-              下一回合
+              開始遊戲
             </button>
-          )}
-        </div>
-      )}
+          </div>
+        )}
 
-      {gameOver && (
-        <div style={{ textAlign: "center", marginTop: "60px" }}>
-          <div style={{ fontSize: "80px", fontWeight: "900", color: "#ffd000" }}>
-            GAME OVER
+        {phase === "selectPlayer" && (
+          <div>
+            <div style={{ fontSize: "18px", fontWeight: "900", marginBottom: "15px", textAlign: "center", color: "#aaa" }}>
+              選擇你的角色
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", gap: "12px" }}>
+              {Object.keys(characters).map(key => (
+                <div
+                  key={key}
+                  onClick={() => {
+                    playSound(clickSoundRef, true)
+                    setPlayerCharacter(key)
+                    setPhase("selectEnemy")
+                  }}
+                  style={{ cursor: "pointer", background: "rgba(255,255,255,0.05)", padding: "8px", borderRadius: "12px", width: "85px", textAlign: "center" }}
+                >
+                  <img src={characters[key].idle} style={{ width: "100%", height: "70px", objectFit: "contain" }} alt={key} />
+                  <div style={{ marginTop: "6px", fontSize: "13px", fontWeight: "900" }}>
+                    {characters[key].name.replace("英雄", "").replace("戰士", "")}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div style={{ fontSize: "42px", marginTop: "20px" }}>
-            {leftHearts <= 0 ? "你輸了" : "你贏了"}
+        )}
+
+        {phase === "selectEnemy" && (
+          <div>
+            <div style={{ fontSize: "18px", fontWeight: "900", marginBottom: "15px", textAlign: "center", color: "#aaa" }}>
+              選擇敵人角色
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", gap: "12px" }}>
+              {Object.keys(characters).map(key => (
+                <div
+                  key={key}
+                  onClick={() => {
+                    playSound(clickSoundRef, true)
+                    setEnemyCharacter(key)
+                    setDecisionCountdown(5)
+                    setResultText("請在5秒內選擇左右拳")
+                    setPhase("pick")
+                  }}
+                  style={{ cursor: "pointer", background: "rgba(255,255,255,0.05)", padding: "8px", borderRadius: "12px", width: "85px", textAlign: "center" }}
+                >
+                  <img src={characters[key].idle} style={{ width: "100%", height: "70px", objectFit: "contain" }} alt={key} />
+                  <div style={{ marginTop: "6px", fontSize: "13px", fontWeight: "900" }}>
+                    {characters[key].name.replace("英雄", "").replace("戰士", "")}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <button
-            onClick={restartGame}
-            style={{
-              marginTop: "50px",
-              padding: "22px 60px",
-              borderRadius: "999px",
-              border: "none",
-              background: "#ff4d4d",
-              color: "white",
-              fontSize: "30px",
-              fontWeight: "900",
-              cursor: "pointer"
-            }}
-          >
-            再玩一次
-          </button>
-        </div>
-      )}
+        )}
+
+        {phase === "pick" && (
+          <div style={{ width: "100%" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "15px", alignItems: "center" }}>
+              {/* 左拳選區 */}
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span style={{ fontSize: "14px", fontWeight: "900", color: "#aaa", width: "35px" }}>左拳:</span>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  {cards.map(card => (
+                    <div
+                      key={card}
+                      onClick={() => {
+                        playSound(clickSoundRef, true)
+                        setLeftPunch(card)
+                      }}
+                      style={cardStyle(leftPunch === card)}
+                    >
+                      <div style={{ fontSize: "36px" }}>{getCardEmoji(card)}</div>
+                      <div style={{ marginTop: "4px", fontSize: "14px", fontWeight: "900" }}>{card}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* 右拳選區 */}
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span style={{ fontSize: "14px", fontWeight: "900", color: "#aaa", width: "35px" }}>右拳:</span>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  {cards.map(card => (
+                    <div
+                      key={card}
+                      onClick={() => {
+                        playSound(clickSoundRef, true)
+                        setRightPunch(card)
+                      }}
+                      style={cardStyle(rightPunch === card)}
+                    >
+                      <div style={{ fontSize: "36px" }}>{getCardEmoji(card)}</div>
+                      <div style={{ marginTop: "4px", fontSize: "14px", fontWeight: "900" }}>{card}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {phase === "finalPick" && (
+          <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            {/* 雙拳公開揭示板 */}
+            <div style={{ display: "flex", width: "90%", justifyContent: "space-between", background: "rgba(0,0,0,0.3)", padding: "8px 15px", borderRadius: "10px", marginBottom: "15px" }}>
+              <div>
+                <span style={{ fontSize: "12px", color: "#888" }}>你:</span>
+                <span style={{ fontSize: "22px", marginLeft: "6px" }}>{getCardEmoji(leftPunch)}{getCardEmoji(rightPunch)}</span>
+              </div>
+              <div>
+                <span style={{ fontSize: "12px", color: "#888" }}>敵:</span>
+                <span style={{ fontSize: "22px", marginLeft: "6px" }}>{getCardEmoji(enemyLeftPunch)}{getCardEmoji(enemyRightPunch)}</span>
+              </div>
+            </div>
+            {/* 最終決選二擇一按鈕放置中下 */}
+            <div style={{ display: "flex", gap: "25px" }}>
+              {[leftPunch, rightPunch].map((card, index) => (
+                <div
+                  key={index}
+                  onClick={() => chooseFinalPunch(card)}
+                  style={cardStyle(false)}
+                >
+                  <div style={{ fontSize: "38px" }}>{getCardEmoji(card)}</div>
+                  <div style={{ marginTop: "4px", fontSize: "14px", fontWeight: "900" }}>{card}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {phase === "result" && (
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "42px", fontWeight: "900", display: "flex", justifyContent: "center", alignItems: "center", gap: "15px", marginBottom: "15px" }}>
+              <span>{getCardEmoji(finalPlayerPunch)}</span>
+              <span style={{ fontSize: "18px", color: "#ff4d4d" }}>VS</span>
+              <span>{getCardEmoji(finalEnemyPunch)}</span>
+            </div>
+            {!gameOver && (
+              <button
+                onClick={nextRound}
+                style={{
+                  padding: "12px 45px",
+                  borderRadius: "999px",
+                  border: "none",
+                  background: "#00c96b",
+                  color: "white",
+                  fontSize: "18px",
+                  fontWeight: "900",
+                  cursor: "pointer"
+                }}
+              >
+                下一回合
+              </button>
+            )}
+          </div>
+        )}
+
+        {gameOver && (
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "24px", fontWeight: "900", marginBottom: "15px" }}>
+              {leftHearts <= 0 ? "你輸了 ❌" : "你贏了 🎉"}
+            </div>
+            <button
+              onClick={restartGame}
+              style={{
+                padding: "12px 50px",
+                borderRadius: "999px",
+                border: "none",
+                background: "#ff4d4d",
+                color: "white",
+                fontSize: "18px",
+                fontWeight: "900",
+                cursor: "pointer"
+              }}
+            >
+              再玩一次
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
