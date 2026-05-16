@@ -523,6 +523,7 @@ export default function App() {
         </div>
       )}
 
+
       {/* ── 戰鬥畫面 ── */}
       {isGamePhase && (
         <>
