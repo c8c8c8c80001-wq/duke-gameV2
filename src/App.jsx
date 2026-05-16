@@ -453,7 +453,7 @@ export default function App() {
         </div>
       )}
 
-      {/* ── START 畫面 ── */}}
+      {/* ── START 畫面 ── */}
       {phase === "start" && (
         <div style={{
           flex: 1, display: "flex", flexDirection: "column",
